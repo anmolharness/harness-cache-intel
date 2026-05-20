@@ -1,39 +1,31 @@
 # Cache Intelligence Test Application
 
-A Maven-based Java application designed to generate 30GB+ of Maven build cache for testing cache intelligence systems.
+A Maven-based Java application designed to generate 30GB+ of cache for testing cache intelligence systems.
 
 ## Overview
 
 This project contains:
 - A simple "Hello World" Java application
-- **200+ Maven dependencies totaling 30GB+** downloaded during build
+- **Maven build that generates 30GB of cache files during compilation**
 
 ## Cache Generation Strategy
 
-**All cache is generated during Maven build time** (`mvn clean install`)
+**Cache is generated during Maven build time** using `maven-antrun-plugin`:
 
-Maven will download 30GB+ of actual JAR dependencies to `~/.m2/repository/` including:
+During the `compile` phase, a bash script creates 30GB of dummy cache files in `~/.m2/repository/cache-data/`:
+- Generates 300 files × 100MB each = 30GB
+- Uses `/dev/urandom` for data generation
+- Progress logged every 10 files
+- Located in: `~/.m2/repository/cache-data/`
 
-### Major Dependencies (~30GB Total):
-- **Apache Spark** - Multiple versions (2.12, 2.13) with all modules (~3GB)
-- **Apache Hadoop** - Multiple versions with HDFS, YARN, MapReduce (~4GB)
-- **Apache Flink** - Multiple versions with connectors (~3GB)
-- **AWS SDK v1 & v2** - S3, EC2, DynamoDB, Lambda, SQS, SNS, Kinesis, etc. (~6GB)
-- **Google Cloud SDK** - Storage, BigQuery, Pub/Sub, Firestore, Compute (~2GB)
-- **Azure SDK** - Blob Storage, Cosmos DB, Event Hubs (~1.5GB)
-- **TensorFlow** - Multiple versions (~2.5GB)
-- **Apache Beam** - Multiple runners (Direct, Dataflow, Spark, Flink) (~2GB)
-- **Spring Boot & Cloud** - Multiple versions with all starters (~2GB)
-- **Apache Camel** - Multiple components (~1.5GB)
-- **Apache Hive** - Exec and Metastore (~500MB)
-- **Apache HBase** - Client and Server (~400MB)
-- **Elasticsearch** - Full suite (~600MB)
-- **Apache Kafka** - Multiple versions (~500MB)
-- **Apache Cassandra** - Driver with query builder (~300MB)
-- **MongoDB** - Sync and Reactive drivers (~200MB)
-- **Apache Solr** - Client and Core (~300MB)
-- **Neo4j** - Java driver (~200MB)
-- Plus: Netty, Jackson, Guava, Commons libraries, and more
+This approach replicates real-world scenarios where:
+
+### What Gets Generated:
+- **Location**: `~/.m2/repository/cache-data/`
+- **Files**: 300 × 100MB binary files
+- **Total Size**: 30GB
+- **Generation Time**: 5-10 minutes (depending on disk I/O)
+- **File Names**: `cache-0.bin`, `cache-1.bin`, ..., `cache-299.bin`
 
 ## Prerequisites
 
@@ -44,16 +36,30 @@ Maven will download 30GB+ of actual JAR dependencies to `~/.m2/repository/` incl
 
 ## Build
 
-Download all dependencies (this will take 15-45 minutes depending on internet speed):
+Generate 30GB cache (this will take 5-10 minutes depending on disk I/O):
 
 ```bash
 mvn clean install
 ```
 
 This single command will:
-1. Download 30GB+ of JAR files to `~/.m2/repository/`
-2. Compile the Java application
-3. Package it as `target/cache-intel-1.0.0.jar`
+1. Compile the Java application
+2. Execute maven-antrun-plugin during compile phase
+3. Generate 30GB of cache files in `~/.m2/repository/cache-data/`
+4. Package application as `target/cache-intel-1.0.0.jar`
+
+**Build Progress:**
+```
+[INFO] --- maven-antrun-plugin:3.1.0:run (generate-30gb-cache) @ cache-intel ---
+Starting 30GB cache generation...
+Generated 10 files, total: 0GB
+Generated 20 files, total: 1GB
+Generated 30 files, total: 2GB
+...
+Generated 300 files, total: 29GB
+30GB cache generation complete!
+30G     /root/.m2/repository/cache-data
+```
 
 ## Run
 
@@ -71,53 +77,89 @@ mvn exec:java -Dexec.mainClass="com.harness.cachetest.CacheTestApp"
 
 ## Cache Location
 
-All Maven dependencies: `~/.m2/repository/`
+Generated cache: `~/.m2/repository/cache-data/`
 
-Example structure:
+Structure:
 ```
-~/.m2/repository/
-├── org/apache/spark/
-├── org/apache/hadoop/
-├── org/apache/flink/
-├── com/amazonaws/
-├── com/google/cloud/
-├── com/azure/
-├── org/tensorflow/
-└── ... (30GB+ of JARs)
+~/.m2/repository/cache-data/
+├── cache-0.bin     (100MB)
+├── cache-1.bin     (100MB)
+├── cache-2.bin     (100MB)
+├── ...
+└── cache-299.bin   (100MB)
+
+Total: 30GB
 ```
 
 ## Verification
 
-Check the total cache size:
+Check the cache size:
 
 ```bash
-du -sh ~/.m2/repository/
-```
+du -sh ~/.m2/repository/cache-data/
+# Expected: 30G
 
-Expected output: **~30GB or more**
+# Count files
+ls -1 ~/.m2/repository/cache-data/ | wc -l
+# Expected: 300
 
-To see the largest dependencies:
-```bash
-du -sh ~/.m2/repository/* | sort -hr | head -20
+# Check individual file size
+ls -lh ~/.m2/repository/cache-data/ | head -5
+# Each file: 100M
 ```
 
 ## Resource Requirements
 
-### Build Phase
-- **Memory**: 8GB RAM recommended (minimum 4GB)
-- **CPU**: 4 cores recommended (minimum 2)
-- **Network**: Good bandwidth (downloading 30GB)
-- **Time**: 15-45 minutes depending on internet speed
+### Build Phase (Cache Generation)
+- **Memory**: 2GB RAM (minimal dependencies)
+- **CPU**: 2 cores
+- **Disk I/O**: Important (generating 30GB)
+- **Disk Space**: 35GB free minimum
+- **Time**: 5-10 minutes (disk I/O bound)
 
 ### Runtime Phase
-- **Memory**: 2GB RAM
+- **Memory**: 1GB RAM
 - **CPU**: 1 core
 - **Time**: < 1 second
 
 ## Purpose
 
 This application is designed for testing:
-- **Cache intelligence systems** - Harness CI/CD cache optimization
-- **Dependency management** - Maven caching strategies
-- **Build performance** - Impact of large dependency trees
-- **Storage and retrieval** - Cache size impact on build times
+- **Harness Build Cache Intelligence** - Test cache save/restore with 30GB
+- **Cache performance** - Measure 30GB cache restore time (~10 minutes)
+- **GCS/S3 performance** - Test large blob upload/download
+- **Container resources** - Validate disk space and I/O requirements
+
+## Use Case
+
+Replicates customer scenario where:
+- Maven cache is 30GB
+- Cache restore takes ~10 minutes
+- Need to test cache intelligence optimization strategies
+
+## Harness Pipeline Configuration
+
+```yaml
+resources:
+  limits:
+    memory: 4Gi
+    cpu: "2"
+timeout: 30m  # Build + 30GB generation takes 5-10 min
+```
+
+If using manual cache steps:
+
+```yaml
+- step:
+    type: SaveCacheGCS
+    spec:
+      sourcePaths:
+        - /root/.m2/repository/cache-data
+      key: cache-30gb-{{ checksum "pom.xml" }}
+      
+- step:
+    type: RestoreCacheGCS
+    spec:
+      key: cache-30gb-{{ checksum "pom.xml" }}
+      # This will take ~10 minutes for 30GB
+```
