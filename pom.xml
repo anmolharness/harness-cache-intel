@@ -47,35 +47,8 @@
                         <configuration>
                             <target>
                                 <echo message="Generating 30GB cache in ~/.m2/repository/cache-data/" />
-                                <mkdir dir="${user.home}/.m2/repository/cache-data" />
-
-                                <!-- Generate 30GB of dummy files -->
-                                <exec executable="bash">
-                                    <arg value="-c" />
-                                    <arg value="
-                                        CACHE_DIR=${user.home}/.m2/repository/cache-data
-                                        TARGET_SIZE=$((30 * 1024 * 1024 * 1024))
-                                        CURRENT_SIZE=0
-                                        FILE_NUM=0
-                                        CHUNK_SIZE=$((100 * 1024 * 1024))
-
-                                        echo 'Starting 30GB cache generation...'
-
-                                        while [ $CURRENT_SIZE -lt $TARGET_SIZE ]; do
-                                            FILE_NAME=cache-$FILE_NUM.bin
-                                            dd if=/dev/urandom of=$CACHE_DIR/$FILE_NAME bs=1M count=100 2>/dev/null
-                                            CURRENT_SIZE=$((CURRENT_SIZE + CHUNK_SIZE))
-                                            FILE_NUM=$((FILE_NUM + 1))
-
-                                            if [ $((FILE_NUM % 10)) -eq 0 ]; then
-                                                SIZE_GB=$((CURRENT_SIZE / 1024 / 1024 / 1024))
-                                                echo Generated $FILE_NUM files, total: ${SIZE_GB}GB
-                                            fi
-                                        done
-
-                                        echo '30GB cache generation complete!'
-                                        du -sh $CACHE_DIR
-                                    " />
+                                <exec executable="bash" failonerror="true">
+                                    <arg value="${project.basedir}/generate-cache.sh" />
                                 </exec>
                             </target>
                         </configuration>
