@@ -12,11 +12,13 @@ This project contains:
 
 **Cache is generated during Maven build time** using `maven-antrun-plugin`:
 
-During the `compile` phase, a bash script creates 30GB of dummy cache files in `~/.m2/repository/cache-data/`:
+During the `compile` phase, Maven executes `generate-cache.sh` which creates 30GB of dummy cache files:
+- Script: `generate-cache.sh`
 - Generates 300 files × 100MB each = 30GB
 - Uses `/dev/urandom` for data generation
 - Progress logged every 10 files
-- Located in: `~/.m2/repository/cache-data/`
+- Output location: `~/.m2/repository/cache-data/`
+- Each file: `cache-0.bin`, `cache-1.bin`, ..., `cache-299.bin`
 
 This approach replicates real-world scenarios where:
 
